@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stock Analysis App</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0a0a0a;
+            color: #e5e5e5;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: #22c55e;
+            margin-bottom: 30px;
+            font-size: 2rem;
+        }
+        .search-box {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+        }
+        input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 1px solid #333;
+            border-radius: 8px;
+            background: #1a1a1a;
+            color: #fff;
+            font-size: 16px;
+        }
+        input:focus {
+            outline: none;
+            border-color: #22c55e;
+        }
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            background: #22c55e;
+            color: #000;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        button:hover {
+            background: #16a34a;
+        }
+        .stock-card {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 20px;
+        }
+        .stock-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+        .stock-symbol {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #fff;
+        }
+        .stock-price {
+            font-size: 2rem;
+            font-weight: 700;
+        }
+        .price-up { color: #22c55e; }
+        .price-down { color: #ef4444; }
+        .stock-details {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-top: 16px;
+        }
+        .detail-item {
+            background: #252525;
+            padding: 12px;
+            border-radius: 8px;
+        }
+        .detail-label {
+            color: #888;
+            font-size: 0.85rem;
+            margin-bottom: 4px;
+        }
+        .detail-value {
+            font-weight: 600;
+        }
+        .watchlist {
+            margin-top: 40px;
+        }
+        .watchlist h2 {
+            color: #fff;
+            margin-bottom: 16px;
+        }
+        .watchlist-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #1a1a1a;
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 8px;
+        }
+        .watchlist-item button {
+            background: #333;
+            padding: 8px 16px;
+        }
+        .watchlist-item button:hover {
+            background: #ef4444;
+        }
+        .add-btn {
+            background: #333;
+            margin-left: 10px;
+        }
+        .add-btn:hover {
+            background: #22c55e;
+        }
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #888;
+        }
+        .error {
+            background: #7f1d1d;
+            color: #fca5a5;
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📈 Stock Analysis</h1>
+        
+        <div class="search-box">
+            <input type="text" id="symbolInput" placeholder="Enter stock symbol (e.g., AAPL, TSLA)" />
+            <button onclick="lookupStock()">Search</button>
+            <button class="add-btn" onclick="addToWatchlist()">+ Watch</button>
+        </div>
+
+        <div id="error" class="error" style="display: none;"></div>
+        <div id="stockData"></div>
+        
+        <div class="watchlist">
+            <h2>Your Watchlist</h2>
+            <div id="watchlistItems">
+                <p class="loading">Loading watchlist...</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ========== REPLACE THESE WITH YOUR SUPABASE CREDENTIALS ==========
+        const SUPABASE_URL = 'YOUR_SUPABASE_URL';
+        const SUPABASE_KEY = 'YOUR_SUPABASE_ANON_KEY';
+        // ==================================================================
+
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        
+        let currentStock = null;
+
+        // Load watchlist on page load
+        document.addEventListener('DOMContentLoaded', loadWatchlist);
+
+        // Allow Enter key to search
+        document.getElementById('symbolInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') lookupStock();
+        });
+
+        async function lookupStock() {
+            const symbol = document.getElementById('symbolInput').value.toUpperCase().trim();
+            if (!symbol) return;
+
+            document.getElementById('error').style.display = 'none';
+            document.getElementById('stockData').innerHTML = '<p class="loading">Loading...</p>';
+
+            try {
+                // Using Yahoo Finance API (free, no key needed)
+                const response = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&range=5d`);
+                const data = await response.json();
+
+                if (data.chart.error) {
+                    throw new Error(data.chart.error.description);
+                }
+
+                const quote = data.chart.result[0];
+                const meta = quote.meta;
+                const price = meta.regularMarketPrice;
+                const prevClose = meta.chartPreviousClose;
+                const change = price - prevClose;
+                const changePercent = (change / prevClose) * 100;
+
+                currentStock = {
+                    symbol: symbol,
+                    price: price,
+                    change: change,
+                    changePercent: changePercent,
+                    high: meta.regularMarketDayHigh,
+                    low: meta.regularMarketDayLow,
+                    volume: meta.regularMarketVolume,
+                    marketCap: meta.marketCap
+                };
+
+                displayStock(currentStock);
+
+            } catch (error) {
+                document.getElementById('stockData').innerHTML = '';
+                document.getElementById('error').textContent = `Error: ${error.message || 'Could not find that stock'}`;
+                document.getElementById('error').style.display = 'block';
+            }
+        }
+
+        function displayStock(stock) {
+            const isUp = stock.change >= 0;
+            const arrow = isUp ? '▲' : '▼';
+            const priceClass = isUp ? 'price-up' : 'price-down';
+
+            document.getElementById('stockData').innerHTML = `
+                <div class="stock-card">
+                    <div class="stock-header">
+                        <span class="stock-symbol">${stock.symbol}</span>
+                        <div>
+                            <span class="stock-price ${priceClass}">$${stock.price.toFixed(2)}</span>
+                            <span class="${priceClass}"> ${arrow} ${Math.abs(stock.change).toFixed(2)} (${Math.abs(stock.changePercent).toFixed(2)}%)</span>
+                        </div>
+                    </div>
+                    <div class="stock-details">
+                        <div class="detail-item">
+                            <div class="detail-label">Day High</div>
+                            <div class="detail-value">$${stock.high?.toFixed(2) || 'N/A'}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Day Low</div>
+                            <div class="detail-value">$${stock.low?.toFixed(2) || 'N/A'}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Volume</div>
+                            <div class="detail-value">${formatNumber(stock.volume)}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Market Cap</div>
+                            <div class="detail-value">${formatNumber(stock.marketCap)}</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function formatNumber(num) {
+            if (!num) return 'N/A';
+            if (num >= 1e12) return (num / 1e12).toFixed(2) + 'T';
+            if (num >= 1e9) return (num / 1e9).toFixed(2) + 'B';
+            if (num >= 1e6) return (num / 1e6).toFixed(2) + 'M';
+            if (num >= 1e3) return (num / 1e3).toFixed(2) + 'K';
+            return num.toString();
+        }
+
+        async function addToWatchlist() {
+            const symbol = document.getElementById('symbolInput').value.toUpperCase().trim();
+            if (!symbol) {
+                alert('Enter a stock symbol first!');
+                return;
+            }
+
+            try {
+                const { data, error } = await supabase
+                    .from('watchlist')
+                    .insert([{ symbol: symbol, notes: '' }]);
+
+                if (error) throw error;
+
+                loadWatchlist();
+                alert(`${symbol} added to watchlist!`);
+
+            } catch (error) {
+                alert('Error adding to watchlist: ' + error.message);
+            }
+        }
+
+        async function loadWatchlist() {
+            try {
+                const { data, error } = await supabase
+                    .from('watchlist')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+
+                if (error) throw error;
+
+                const container = document.getElementById('watchlistItems');
+
+                if (data.length === 0) {
+                    container.innerHTML = '<p style="color: #888;">No stocks in your watchlist yet. Search for a stock and click "+ Watch"</p>';
+                    return;
+                }
+
+                container.innerHTML = data.map(item => `
+                    <div class="watchlist-item">
+                        <span style="font-weight: 600; cursor: pointer;" onclick="quickLookup('${item.symbol}')">${item.symbol}</span>
+                        <button onclick="removeFromWatchlist(${item.id})">Remove</button>
+                    </div>
+                `).join('');
+
+            } catch (error) {
+                document.getElementById('watchlistItems').innerHTML = 
+                    '<p style="color: #ef4444;">Error loading watchlist. Check your Supabase credentials.</p>';
+            }
+        }
+
+        async function removeFromWatchlist(id) {
+            try {
+                const { error } = await supabase
+                    .from('watchlist')
+                    .delete()
+                    .eq('id', id);
+
+                if (error) throw error;
+                loadWatchlist();
+
+            } catch (error) {
+                alert('Error removing: ' + error.message);
+            }
+        }
+
+        function quickLookup(symbol) {
+            document.getElementById('symbolInput').value = symbol;
+            lookupStock();
+        }
+    </script>
+</body>
+</html>
