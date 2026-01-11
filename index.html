@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Stock Analysis App</title>
+    <title>Trading App</title>
+    <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         * {
@@ -16,331 +17,425 @@
             background: #0a0a0a;
             color: #e5e5e5;
             min-height: 100vh;
-            padding: 20px;
         }
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
+        
+        /* Layout */
+        .app-container {
+            display: grid;
+            grid-template-columns: 200px 1fr;
+            grid-template-rows: 50px 1fr 200px;
+            height: 100vh;
+            gap: 1px;
+            background: #222;
         }
-        h1 {
-            color: #22c55e;
-            margin-bottom: 30px;
-            font-size: 2rem;
-        }
-        .search-box {
+        
+        /* Header */
+        .header {
+            grid-column: 1 / -1;
+            background: #111;
             display: flex;
-            gap: 10px;
-            margin-bottom: 30px;
+            align-items: center;
+            padding: 0 20px;
+            gap: 20px;
         }
-        input {
-            flex: 1;
-            padding: 12px 16px;
-            border: 1px solid #333;
-            border-radius: 8px;
-            background: #1a1a1a;
+        .header h1 {
+            font-size: 1.2rem;
+            color: #22c55e;
+        }
+        .header-tabs {
+            display: flex;
+            gap: 5px;
+        }
+        .header-tabs button {
+            padding: 8px 16px;
+            background: transparent;
+            border: none;
+            color: #888;
+            cursor: pointer;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .header-tabs button.active {
+            background: #222;
             color: #fff;
-            font-size: 16px;
         }
-        input:focus {
+        .header-tabs button:hover {
+            color: #fff;
+        }
+        
+        /* Sidebar */
+        .sidebar {
+            background: #111;
+            padding: 15px;
+            overflow-y: auto;
+        }
+        .sidebar h3 {
+            font-size: 0.85rem;
+            color: #888;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+        }
+        .watchlist-item {
+            padding: 10px;
+            cursor: pointer;
+            border-radius: 4px;
+            margin-bottom: 4px;
+            display: flex;
+            justify-content: space-between;
+        }
+        .watchlist-item:hover {
+            background: #1a1a1a;
+        }
+        .watchlist-item.active {
+            background: #22c55e22;
+            border-left: 2px solid #22c55e;
+        }
+        .watchlist-symbol {
+            font-weight: 600;
+        }
+        .watchlist-price {
+            color: #888;
+            font-size: 0.9rem;
+        }
+        
+        /* Main Chart Area */
+        .main-content {
+            background: #0a0a0a;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        /* Chart Controls */
+        .chart-controls {
+            display: flex;
+            align-items: center;
+            padding: 10px 15px;
+            gap: 15px;
+            background: #111;
+            border-bottom: 1px solid #222;
+        }
+        .ticker-input {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            color: #fff;
+            padding: 8px 12px;
+            border-radius: 4px;
+            width: 120px;
+            font-size: 14px;
+        }
+        .ticker-input:focus {
             outline: none;
             border-color: #22c55e;
         }
-        button {
-            padding: 12px 24px;
-            border: none;
-            border-radius: 8px;
-            background: #22c55e;
-            color: #000;
-            font-weight: 600;
-            cursor: pointer;
-            transition: background 0.2s;
+        .timeframe-buttons {
+            display: flex;
+            gap: 4px;
         }
-        button:hover {
-            background: #16a34a;
-        }
-        .stock-card {
+        .tf-btn {
+            padding: 6px 12px;
             background: #1a1a1a;
             border: 1px solid #333;
-            border-radius: 12px;
-            padding: 24px;
-            margin-bottom: 20px;
+            color: #888;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
         }
-        .stock-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 16px;
-        }
-        .stock-symbol {
-            font-size: 1.5rem;
-            font-weight: 700;
+        .tf-btn:hover {
+            border-color: #444;
             color: #fff;
         }
-        .stock-price {
-            font-size: 2rem;
+        .tf-btn.active {
+            background: #22c55e;
+            border-color: #22c55e;
+            color: #000;
+        }
+        .current-price {
+            margin-left: auto;
+            font-size: 1.5rem;
             font-weight: 700;
         }
         .price-up { color: #22c55e; }
         .price-down { color: #ef4444; }
-        .stock-details {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 12px;
-            margin-top: 16px;
+        
+        /* Chart Container */
+        #chart-container {
+            flex: 1;
+            position: relative;
         }
-        .detail-item {
-            background: #252525;
-            padding: 12px;
-            border-radius: 8px;
+        
+        /* Bottom Panel (Chat) */
+        .bottom-panel {
+            grid-column: 1 / -1;
+            background: #111;
+            border-top: 1px solid #333;
+            display: flex;
+            flex-direction: column;
         }
-        .detail-label {
-            color: #888;
+        .panel-header {
+            padding: 10px 15px;
             font-size: 0.85rem;
-            margin-bottom: 4px;
-        }
-        .detail-value {
-            font-weight: 600;
-        }
-        .watchlist {
-            margin-top: 40px;
-        }
-        .watchlist h2 {
-            color: #fff;
-            margin-bottom: 16px;
-        }
-        .watchlist-item {
+            color: #888;
+            border-bottom: 1px solid #222;
             display: flex;
             justify-content: space-between;
             align-items: center;
+        }
+        .chat-messages {
+            flex: 1;
+            padding: 15px;
+            overflow-y: auto;
+            font-size: 14px;
+            color: #aaa;
+        }
+        .chat-input-area {
+            display: flex;
+            padding: 10px;
+            gap: 10px;
+            border-top: 1px solid #222;
+        }
+        .chat-input {
+            flex: 1;
             background: #1a1a1a;
-            padding: 16px;
-            border-radius: 8px;
-            margin-bottom: 8px;
+            border: 1px solid #333;
+            color: #fff;
+            padding: 10px;
+            border-radius: 4px;
+            font-size: 14px;
         }
-        .watchlist-item button {
-            background: #333;
-            padding: 8px 16px;
+        .chat-input:focus {
+            outline: none;
+            border-color: #22c55e;
         }
-        .watchlist-item button:hover {
-            background: #ef4444;
-        }
-        .add-btn {
-            background: #333;
-            margin-left: 10px;
-        }
-        .add-btn:hover {
+        .chat-send {
+            padding: 10px 20px;
             background: #22c55e;
+            border: none;
+            color: #000;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
         }
+        
         .loading {
-            text-align: center;
-            padding: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
             color: #888;
-        }
-        .error {
-            background: #7f1d1d;
-            color: #fca5a5;
-            padding: 16px;
-            border-radius: 8px;
-            margin-bottom: 20px;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>📈 Stock Analysis</h1>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="header">
+            <h1>📈 TradeView</h1>
+            <div class="header-tabs">
+                <button class="active">Chart</button>
+                <button>Scanner</button>
+                <button>Journal</button>
+            </div>
+        </header>
         
-        <div class="search-box">
-            <input type="text" id="symbolInput" placeholder="Enter stock symbol (e.g., AAPL, TSLA)" />
-            <button onclick="lookupStock()">Search</button>
-            <button class="add-btn" onclick="addToWatchlist()">+ Watch</button>
-        </div>
-
-        <div id="error" class="error" style="display: none;"></div>
-        <div id="stockData"></div>
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <h3>Watchlist</h3>
+            <div id="watchlist">
+                <div class="watchlist-item active" onclick="changeTicker('AAPL')">
+                    <span class="watchlist-symbol">AAPL</span>
+                </div>
+                <div class="watchlist-item" onclick="changeTicker('TSLA')">
+                    <span class="watchlist-symbol">TSLA</span>
+                </div>
+                <div class="watchlist-item" onclick="changeTicker('MSFT')">
+                    <span class="watchlist-symbol">MSFT</span>
+                </div>
+                <div class="watchlist-item" onclick="changeTicker('NVDA')">
+                    <span class="watchlist-symbol">NVDA</span>
+                </div>
+                <div class="watchlist-item" onclick="changeTicker('SPY')">
+                    <span class="watchlist-symbol">SPY</span>
+                </div>
+            </div>
+        </aside>
         
-        <div class="watchlist">
-            <h2>Your Watchlist</h2>
-            <div id="watchlistItems">
-                <p class="loading">Loading watchlist...</p>
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="chart-controls">
+                <input type="text" class="ticker-input" id="tickerInput" value="AAPL" placeholder="Symbol" />
+                <button class="tf-btn" onclick="loadChart()">Go</button>
+                
+                <div class="timeframe-buttons">
+                    <button class="tf-btn" data-tf="1d" data-range="5d">1D</button>
+                    <button class="tf-btn" data-tf="5d" data-range="1mo">5D</button>
+                    <button class="tf-btn active" data-tf="1d" data-range="6mo">6M</button>
+                    <button class="tf-btn" data-tf="1d" data-range="1y">1Y</button>
+                    <button class="tf-btn" data-tf="1wk" data-range="5y">5Y</button>
+                </div>
+                
+                <div class="current-price" id="currentPrice">--</div>
+            </div>
+            
+            <div id="chart-container">
+                <div class="loading">Loading chart...</div>
+            </div>
+        </main>
+        
+        <!-- Bottom Panel -->
+        <div class="bottom-panel">
+            <div class="panel-header">
+                <span>AI Assistant</span>
+                <span style="font-size: 12px; color: #555;">Coming in Phase 6</span>
+            </div>
+            <div class="chat-messages">
+                <p>👋 AI chat will be added soon. For now, enjoy the charts!</p>
+            </div>
+            <div class="chat-input-area">
+                <input type="text" class="chat-input" placeholder="Ask about this chart..." disabled />
+                <button class="chat-send" disabled>Send</button>
             </div>
         </div>
     </div>
 
     <script>
-        // ========== REPLACE THESE WITH YOUR SUPABASE CREDENTIALS ==========
-        const SUPABASE_URL = 'https://waqfwlhekmpvaveybcmf.supabase.co';
-        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndhcWZ3bGhla21wdmF2ZXliY21mIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgxNzExNzIsImV4cCI6MjA4Mzc0NzE3Mn0.bLsd06sN9Lc2qVaOdilt3flrHZtP4vbgi4Vm1Rzme8w';
-        // ==================================================================
+        // ============ CONFIGURATION ============
+        let currentTicker = 'AAPL';
+        let currentInterval = '1d';
+        let currentRange = '6mo';
+        let chart = null;
+        let candleSeries = null;
 
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-        
-        let currentStock = null;
-
-        // Load watchlist on page load
-        document.addEventListener('DOMContentLoaded', loadWatchlist);
-
-        // Allow Enter key to search
-        document.getElementById('symbolInput').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') lookupStock();
+        // ============ INITIALIZE ============
+        document.addEventListener('DOMContentLoaded', () => {
+            initChart();
+            loadChart();
+            setupEventListeners();
         });
 
-        async function lookupStock() {
-            const symbol = document.getElementById('symbolInput').value.toUpperCase().trim();
-            if (!symbol) return;
+        function initChart() {
+            const container = document.getElementById('chart-container');
+            container.innerHTML = '';
+            
+            chart = LightweightCharts.createChart(container, {
+                layout: {
+                    background: { color: '#0a0a0a' },
+                    textColor: '#999',
+                },
+                grid: {
+                    vertLines: { color: '#1a1a1a' },
+                    horzLines: { color: '#1a1a1a' },
+                },
+                crosshair: {
+                    mode: LightweightCharts.CrosshairMode.Normal,
+                },
+                rightPriceScale: {
+                    borderColor: '#333',
+                },
+                timeScale: {
+                    borderColor: '#333',
+                    timeVisible: true,
+                },
+            });
 
-            document.getElementById('error').style.display = 'none';
-            document.getElementById('stockData').innerHTML = '<p class="loading">Loading...</p>';
+            candleSeries = chart.addCandlestickSeries({
+                upColor: '#22c55e',
+                downColor: '#ef4444',
+                borderDownColor: '#ef4444',
+                borderUpColor: '#22c55e',
+                wickDownColor: '#ef4444',
+                wickUpColor: '#22c55e',
+            });
 
+            // Resize chart with window
+            window.addEventListener('resize', () => {
+                chart.applyOptions({
+                    width: container.clientWidth,
+                    height: container.clientHeight,
+                });
+            });
+        }
+
+        async function loadChart() {
+            const ticker = document.getElementById('tickerInput').value.toUpperCase().trim();
+            if (!ticker) return;
+            
+            currentTicker = ticker;
+            
             try {
-                // Using Yahoo Finance API (free, no key needed)
-                const response = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&range=5d`);
+                // Yahoo Finance API
+                const url = `https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?interval=${currentInterval}&range=${currentRange}`;
+                const response = await fetch(url);
                 const data = await response.json();
 
                 if (data.chart.error) {
                     throw new Error(data.chart.error.description);
                 }
 
-                const quote = data.chart.result[0];
-                const meta = quote.meta;
-                const price = meta.regularMarketPrice;
-                const prevClose = meta.chartPreviousClose;
-                const change = price - prevClose;
-                const changePercent = (change / prevClose) * 100;
+                const result = data.chart.result[0];
+                const quotes = result.indicators.quote[0];
+                const timestamps = result.timestamp;
 
-                currentStock = {
-                    symbol: symbol,
-                    price: price,
-                    change: change,
-                    changePercent: changePercent,
-                    high: meta.regularMarketDayHigh,
-                    low: meta.regularMarketDayLow,
-                    volume: meta.regularMarketVolume,
-                    marketCap: meta.marketCap
-                };
+                // Format data for Lightweight Charts
+                const candleData = timestamps.map((time, i) => ({
+                    time: time,
+                    open: quotes.open[i],
+                    high: quotes.high[i],
+                    low: quotes.low[i],
+                    close: quotes.close[i],
+                })).filter(d => d.open && d.high && d.low && d.close);
 
-                displayStock(currentStock);
+                candleSeries.setData(candleData);
+                chart.timeScale().fitContent();
 
-            } catch (error) {
-                document.getElementById('stockData').innerHTML = '';
-                document.getElementById('error').textContent = `Error: ${error.message || 'Could not find that stock'}`;
-                document.getElementById('error').style.display = 'block';
-            }
-        }
-
-        function displayStock(stock) {
-            const isUp = stock.change >= 0;
-            const arrow = isUp ? '▲' : '▼';
-            const priceClass = isUp ? 'price-up' : 'price-down';
-
-            document.getElementById('stockData').innerHTML = `
-                <div class="stock-card">
-                    <div class="stock-header">
-                        <span class="stock-symbol">${stock.symbol}</span>
-                        <div>
-                            <span class="stock-price ${priceClass}">$${stock.price.toFixed(2)}</span>
-                            <span class="${priceClass}"> ${arrow} ${Math.abs(stock.change).toFixed(2)} (${Math.abs(stock.changePercent).toFixed(2)}%)</span>
-                        </div>
-                    </div>
-                    <div class="stock-details">
-                        <div class="detail-item">
-                            <div class="detail-label">Day High</div>
-                            <div class="detail-value">$${stock.high?.toFixed(2) || 'N/A'}</div>
-                        </div>
-                        <div class="detail-item">
-                            <div class="detail-label">Day Low</div>
-                            <div class="detail-value">$${stock.low?.toFixed(2) || 'N/A'}</div>
-                        </div>
-                        <div class="detail-item">
-                            <div class="detail-label">Volume</div>
-                            <div class="detail-value">${formatNumber(stock.volume)}</div>
-                        </div>
-                        <div class="detail-item">
-                            <div class="detail-label">Market Cap</div>
-                            <div class="detail-value">${formatNumber(stock.marketCap)}</div>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
-
-        function formatNumber(num) {
-            if (!num) return 'N/A';
-            if (num >= 1e12) return (num / 1e12).toFixed(2) + 'T';
-            if (num >= 1e9) return (num / 1e9).toFixed(2) + 'B';
-            if (num >= 1e6) return (num / 1e6).toFixed(2) + 'M';
-            if (num >= 1e3) return (num / 1e3).toFixed(2) + 'K';
-            return num.toString();
-        }
-
-        async function addToWatchlist() {
-            const symbol = document.getElementById('symbolInput').value.toUpperCase().trim();
-            if (!symbol) {
-                alert('Enter a stock symbol first!');
-                return;
-            }
-
-            try {
-                const { data, error } = await supabase
-                    .from('watchlist')
-                    .insert([{ symbol: symbol, notes: '' }]);
-
-                if (error) throw error;
-
-                loadWatchlist();
-                alert(`${symbol} added to watchlist!`);
-
-            } catch (error) {
-                alert('Error adding to watchlist: ' + error.message);
-            }
-        }
-
-        async function loadWatchlist() {
-            try {
-                const { data, error } = await supabase
-                    .from('watchlist')
-                    .select('*')
-                    .order('created_at', { ascending: false });
-
-                if (error) throw error;
-
-                const container = document.getElementById('watchlistItems');
-
-                if (data.length === 0) {
-                    container.innerHTML = '<p style="color: #888;">No stocks in your watchlist yet. Search for a stock and click "+ Watch"</p>';
-                    return;
+                // Update current price display
+                const lastCandle = candleData[candleData.length - 1];
+                const prevCandle = candleData[candleData.length - 2];
+                if (lastCandle && prevCandle) {
+                    const change = lastCandle.close - prevCandle.close;
+                    const isUp = change >= 0;
+                    document.getElementById('currentPrice').innerHTML = `
+                        <span class="${isUp ? 'price-up' : 'price-down'}">
+                            $${lastCandle.close.toFixed(2)} ${isUp ? '▲' : '▼'}
+                        </span>
+                    `;
                 }
 
-                container.innerHTML = data.map(item => `
-                    <div class="watchlist-item">
-                        <span style="font-weight: 600; cursor: pointer;" onclick="quickLookup('${item.symbol}')">${item.symbol}</span>
-                        <button onclick="removeFromWatchlist(${item.id})">Remove</button>
-                    </div>
-                `).join('');
+                // Update active watchlist item
+                document.querySelectorAll('.watchlist-item').forEach(el => {
+                    el.classList.remove('active');
+                    if (el.querySelector('.watchlist-symbol').textContent === ticker) {
+                        el.classList.add('active');
+                    }
+                });
 
             } catch (error) {
-                document.getElementById('watchlistItems').innerHTML = 
-                    '<p style="color: #ef4444;">Error loading watchlist. Check your Supabase credentials.</p>';
+                console.error('Error loading chart:', error);
+                document.getElementById('chart-container').innerHTML = 
+                    `<div class="loading" style="color: #ef4444;">Error: ${error.message}</div>`;
             }
         }
 
-        async function removeFromWatchlist(id) {
-            try {
-                const { error } = await supabase
-                    .from('watchlist')
-                    .delete()
-                    .eq('id', id);
+        function setupEventListeners() {
+            // Timeframe buttons
+            document.querySelectorAll('.tf-btn[data-tf]').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.tf-btn[data-tf]').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    currentInterval = btn.dataset.tf;
+                    currentRange = btn.dataset.range;
+                    loadChart();
+                });
+            });
 
-                if (error) throw error;
-                loadWatchlist();
-
-            } catch (error) {
-                alert('Error removing: ' + error.message);
-            }
+            // Enter key on ticker input
+            document.getElementById('tickerInput').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') loadChart();
+            });
         }
 
-        function quickLookup(symbol) {
-            document.getElementById('symbolInput').value = symbol;
-            lookupStock();
+        function changeTicker(symbol) {
+            document.getElementById('tickerInput').value = symbol;
+            loadChart();
         }
     </script>
 </body>
