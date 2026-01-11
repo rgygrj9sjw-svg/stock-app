@@ -1,0 +1,115 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+:root {
+  --runnr-green: #22c55e;
+  --runnr-red: #ef4444;
+  --runnr-yellow: #f59e0b;
+  --runnr-purple: #8b5cf6;
+  --runnr-blue: #3b82f6;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  max-width: 100vw;
+  overflow-x: hidden;
+  background: #0a0a0a;
+  color: #e5e5e5;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0a0a0a;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #333;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #444;
+}
+
+/* Chart container */
+.chart-container {
+  width: 100%;
+  height: 100%;
+}
+
+/* Animations */
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.animate-pulse-slow {
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+/* Price colors */
+.text-up {
+  color: var(--runnr-green);
+}
+
+.text-down {
+  color: var(--runnr-red);
+}
+
+.bg-up {
+  background-color: var(--runnr-green);
+}
+
+.bg-down {
+  background-color: var(--runnr-red);
+}
+
+/* Glass effect */
+.glass {
+  background: rgba(17, 17, 17, 0.8);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* Button styles */
+.btn-primary {
+  @apply px-4 py-2 bg-runnr-green text-black font-semibold rounded-lg hover:bg-green-400 transition-colors;
+}
+
+.btn-secondary {
+  @apply px-4 py-2 bg-runnr-card border border-runnr-border text-white rounded-lg hover:bg-runnr-border transition-colors;
+}
+
+.btn-ghost {
+  @apply px-4 py-2 text-runnr-muted hover:text-white hover:bg-runnr-card rounded-lg transition-colors;
+}
+
+/* Input styles */
+.input {
+  @apply w-full px-4 py-2 bg-runnr-card border border-runnr-border rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-runnr-green transition-colors;
+}
+
+/* Card styles */
+.card {
+  @apply bg-runnr-card border border-runnr-border rounded-xl;
+}
