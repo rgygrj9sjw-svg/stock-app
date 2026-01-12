@@ -1,13 +1,13 @@
 'use client'
 
 import { useState } from 'react'
-import Header from './components/Header'
-import Sidebar from './components/Sidebar'
-import Chart from './components/Chart'
-import InfoPanel from './components/InfoPanel'
-import QuickStats from './components/QuickStats'
-import ScannerPanel from './components/ScannerPanel'
-import type { MarketstackEodEntry } from './lib/marketstack'
+import Header from '../components/Header'
+import Sidebar from '../components/Sidebar'
+import Chart from '../components/Chart'
+import InfoPanel from '../components/InfoPanel'
+import QuickStats from '../components/QuickStats'
+import ScannerPanel from '../components/ScannerPanel'
+import type { MarketstackEodEntry } from '../lib/marketstack'
 
 export default function Home() {
   const [currentTicker, setCurrentTicker] = useState('AAPL')
