@@ -10,6 +10,11 @@
   --runnr-yellow: #f59e0b;
   --runnr-purple: #8b5cf6;
   --runnr-blue: #3b82f6;
+  --runnr-dark: #0a0a0a;
+  --runnr-deep: #0f131a;
+  --runnr-card: #151a22;
+  --runnr-border: #232938;
+  --runnr-muted: #9aa4b2;
 }
 
 * {
@@ -20,8 +25,9 @@ html,
 body {
   max-width: 100vw;
   overflow-x: hidden;
-  background: #0a0a0a;
+  background: var(--runnr-dark);
   color: #e5e5e5;
+  font-family: 'Inter', system-ui, sans-serif;
 }
 
 /* Custom scrollbar */
@@ -43,6 +49,43 @@ body {
   background: #444;
 }
 
+/* Core palette helpers */
+.bg-runnr-dark {
+  background-color: var(--runnr-dark);
+}
+
+.bg-runnr-deep {
+  background-color: var(--runnr-deep);
+}
+
+.bg-runnr-card {
+  background-color: var(--runnr-card);
+}
+
+.bg-runnr-border {
+  background-color: var(--runnr-border);
+}
+
+.bg-runnr-green {
+  background-color: var(--runnr-green);
+}
+
+.text-runnr-muted {
+  color: var(--runnr-muted);
+}
+
+.text-runnr-green {
+  color: var(--runnr-green);
+}
+
+.text-runnr-red {
+  color: var(--runnr-red);
+}
+
+.border-runnr-border {
+  border-color: var(--runnr-border);
+}
+
 /* Chart container */
 .chart-container {
   width: 100%;
@@ -51,12 +94,19 @@ body {
 
 /* Animations */
 @keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .animate-pulse-slow {
@@ -101,7 +151,7 @@ body {
 }
 
 .btn-ghost {
-  @apply px-4 py-2 text-runnr-muted hover:text-white hover:bg-runnr-card rounded-lg transition-colors;
+  @apply px-3 py-2 text-runnr-muted hover:text-white hover:bg-runnr-card rounded-lg transition-colors;
 }
 
 /* Input styles */

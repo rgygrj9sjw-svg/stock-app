@@ -1,46 +1,38 @@
 'use client'
 
 import { useState } from 'react'
-import Header from '@/components/Header'
-import Sidebar from '@/components/Sidebar'
-import Chart from '@/components/Chart'
-import InfoPanel from '@/components/InfoPanel'
-import QuickStats from '@/components/QuickStats'
+import Header from './components/Header'
+import Sidebar from './components/Sidebar'
+import Chart from './components/Chart'
+import InfoPanel from './components/InfoPanel'
+import QuickStats from './components/QuickStats'
+import ScannerPanel from './components/ScannerPanel'
+import type { MarketstackEodEntry } from './lib/marketstack'
 
 export default function Home() {
   const [currentTicker, setCurrentTicker] = useState('AAPL')
-  const [currentInterval, setCurrentInterval] = useState('1day')
-  const [chartData, setChartData] = useState<any[]>([])
+  const [currentInterval, setCurrentInterval] = useState('1month')
+  const [chartData, setChartData] = useState<MarketstackEodEntry[]>([])
 
   return (
     <div className="h-screen flex flex-col overflow-hidden">
-      {/* Header */}
       <Header />
-      
-      {/* Main Content */}
+
       <div className="flex-1 flex overflow-hidden">
-        {/* Left Sidebar - Watchlist */}
-        <Sidebar 
-          currentTicker={currentTicker}
-          onTickerChange={setCurrentTicker}
-        />
-        
-        {/* Main Chart Area */}
-        <main className="flex-1 flex flex-col bg-runnr-dark overflow-hidden">
-          <Chart 
+        <Sidebar currentTicker={currentTicker} onTickerChange={setCurrentTicker} />
+
+        <main className="flex-1 flex flex-col bg-runnr-dark overflow-y-auto">
+          <Chart
             ticker={currentTicker}
             interval={currentInterval}
             onIntervalChange={setCurrentInterval}
             onDataUpdate={setChartData}
           />
           <QuickStats data={chartData} />
+          <ScannerPanel onSelectTicker={setCurrentTicker} />
         </main>
-        
-        {/* Right Sidebar - Info */}
-        <InfoPanel 
-          ticker={currentTicker}
-          data={chartData}
-        />
+
+        <InfoPanel ticker={currentTicker} data={chartData} />
       </div>
     </div>
   )
